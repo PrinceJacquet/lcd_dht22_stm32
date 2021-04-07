@@ -1,0 +1,6 @@
+DHT22.c:41:6:DHT22_Init	24	static
+DHT22.c:59:12:DHT22_ReadData	48	static
+DHT22.c:92:13:set_sensor_pin_mode	40	static
+DHT22.c:113:13:timer_init	24	static
+DHT22.c:132:6:HAL_TIM_PeriodElapsedCallback	16	static
+DHT22.c:140:6:HAL_GPIO_EXTI_Callback	32	static
