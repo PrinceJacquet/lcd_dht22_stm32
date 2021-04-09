@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
@@ -26,9 +27,43 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "lib_lcd.h"
-#include "DHT22.h"
+#include <string.h>
 #include <stdio.h>
+
+/* ---- WIFI ---- */
+#include "wifly_lib.h"
+
+/*	WIFLY_AUTH_OPEN        0    // Open (default)
+	WIFLY_AUTH_WEP         1    // WEP-128
+	WIFLY_AUTH_WPA1        2    // WPA1
+	WIFLY_AUTH_WPA1_2      3    // Mixed-mode WPA1 and WPA2-PSK
+	WIFLY_AUTH_WPA2_PSK    4    // WPA2-PSK
+	WIFLY_AUTH_ADHOC       6    // Ad-hoc, join any Ad-hoc network
+*/
+#define SSID	"Galaxy-S8"
+#define KEY		"123456789"
+#define AUTH	WIFLY_AUTH_WPA2_PSK
+
+#define URL		"httpbin.org"//"api.openweathermap.org" //"e40810fd255dcc.localhost.run"
+
+#define HOST_IP "192.168.43.48"
+#define HOST_PORT "4010"
+#define STD_PORT "80"
+
+
+/* ---- LCD ---- */
+#include "lib_lcd.h"
+/* ---- DHT22 ---- */
+#include "DHT22.h"
+/* ---- TCS34725 ---- */
+#include "tcs34725.h"
+
+
+
+
+
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,6 +95,9 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+
+
+
 /* USER CODE END 0 */
 
 /**
@@ -69,10 +107,6 @@ void SystemClock_Config(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
-	//HAL_NVIC_DisableIRQ(DHT22_SENS_EXTI_IRQn);
-
-
 
   /* USER CODE END 1 */
 
@@ -97,26 +131,17 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM7_Init();
   MX_I2C1_Init();
+  MX_USART1_UART_Init();
+  MX_ADC_Init();
   /* USER CODE BEGIN 2 */
 
 
-  /* INIT LCD */
-  rgb_lcd LCD_DataStruct;
-  LCD_DataStruct._displaycontrol = LCD_DISPLAYON;
-  LCD_DataStruct._displayfunction = LCD_2LINE;
-  LCD_DataStruct._displaymode = LCD_ENTRYLEFT;
 
-
-  lcd_init(&hi2c1, &LCD_DataStruct);
-
-  reglagecouleur(255,0,0);
-
-  /* INIT DHT22 */
-  DHT22_Init(&htim7, 32e6,DHT22_SENS_GPIO_Port,DHT22_SENS_Pin, DHT22_SENS_EXTI_IRQn);
-
-  /* TEST : Print measures on the LCD screen */
-  DHT22_Data DHT22_DataStruct;
-
+  int ok[MAX_RCP_LEN ] = {0};
+  char GET_DATA_Send[100] = "GET /ShowData?id=10";
+  //char path = "/ShowData?";
+  int  id = 10, temp = 2000, humA = 4560, humS = 6700 , Waterlvl = 5000;
+  int reboot = 0, i =0;
 
 
 
@@ -124,37 +149,309 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+
+
+
+  /* ----- INIT LCD ----- */
+
+    rgb_lcd LCD_DataStruct;
+    LCD_DataStruct._displaycontrol = LCD_DISPLAYON;
+    LCD_DataStruct._displayfunction = LCD_2LINE;
+    LCD_DataStruct._displaymode = LCD_ENTRYLEFT;
+
+
+    lcd_init(&hi2c1, &LCD_DataStruct);
+
+    reglagecouleur(50,100,255);
+    HAL_Delay(1000);
+    reglagecouleur(100,200,255);
+    HAL_Delay(1000);
+    reglagecouleur(255,255,255);
+    HAL_Delay(1000);
+
+
+
+    char text_buff[32] = "Initialisation";
+    //sprintf(text_buff,"Temp : %.2f C",DHT22_DataStruct.T);
+
+    lcd_position(&hi2c1,0,0);
+    lcd_print(&hi2c1, text_buff);
+
+
+
+
+    /* lCD INIT : DHT22 */
+
+    sprintf(text_buff,"du DHT22");
+
+    lcd_position(&hi2c1,0,1);
+    lcd_print(&hi2c1, text_buff);
+    HAL_Delay(500);
+
+    /* INIT DHT22 */
+     DHT22_Init(&htim7, 32e6,DHT22_SENS_GPIO_Port,DHT22_SENS_Pin, DHT22_SENS_EXTI_IRQn);
+
+    /* TEST : Print measures on the LCD screen */
+    DHT22_Data DHT22_DataStruct;
+    HAL_Delay(500);
+
+    DHT22_DataStruct = DHT22_ReadData();
+   	  if(DHT22_DataStruct.is_data_valid)
+   	  {
+   		  char text_buff[32];
+   		  sprintf(text_buff,"Temp : %.2f C",DHT22_DataStruct.T);
+   		  lcd_position(&hi2c1,0,0);
+   		  lcd_print(&hi2c1, text_buff);
+
+
+   		  sprintf(text_buff,"Hum : %.2f %%",DHT22_DataStruct.RH);
+   		  lcd_position(&hi2c1,0,1);
+   		  lcd_print(&hi2c1, text_buff);
+
+
+   		  reglagecouleur(200,200,255);
+   		  HAL_Delay(1750);
+   	  }
+
+
+
+   	/* ----- ADC - Water Level  ----- */
+
+   	sprintf(text_buff,"du Niv D'eau");
+
+   	lcd_position(&hi2c1,0,1);
+   	lcd_print(&hi2c1, text_buff);
+
+    uint16_t raw_wtr_lvl;
+    char msg_raw_wtr_lvl[10];
+    //int cln_wtr_lvl =0;
+
+
+
+
+
+    /* lCD INIT : WIFI */
+    sprintf(text_buff,"du module wifi");
+
+    lcd_position(&hi2c1,0,1);
+    lcd_print(&hi2c1, text_buff);
+
+
+
+
+    /* ----- LCD INIT : TCS34 ---- */
+    uint8_t Red[256];
+    uint8_t Blue[256];
+    uint8_t Green[256];
+    float red,green,blue;
+
+
+
+
+
+
+
+
+
+  /* -----  WIFI_authentification(SSID,AUTH,KEY);  ----- */
+
+    commandMode();
+
+	sendCommand("set wlan ssid " SSID "\r", "OK",ok);
+	  if (strcmp(AUTH , WIFLY_AUTH_OPEN) > 0 || strcmp(AUTH , WIFLY_AUTH_OPEN) < 0 )
+	    {
+		  sendCommand("set wlan auth " AUTH "\r","OK", ok);
+	  	  if (strcmp(AUTH , WIFLY_AUTH_WEP)==0)
+	  	  {
+	  		sendCommand("set wlan key " KEY "\r","OK", ok); // Key must be EXACTLY 13 bytes (26 ASCII chars)
+	  	  }
+	  	  else{
+	  		sendCommand("set wlan phrase " KEY"\r","OK", ok);
+
+	  	  }
+	    }
+
+
+
+
+   /* -----  Connect to server ----- */
+
+
+
+  //sendCommand("set ip address 0\r","OK",ok);// so WiFly will use DNS (when of need of DNS)
+  //sendCommand("set dns name " URL"\r", "AOK", ok);
+
+
+
+  //sendCommand("set comm open *OPEN*\r","OK",ok); // set the string that the wifi shield will output when a connection is opened
+
+  //sendCommand("open " HOST_IP " " HOST_PORT"\r","*OPEN*",ok);
+  //sendCommand("open\r","*OPEN*",ok); // One time opening of connection to server
+
+
+  /* -----  Save wlan config ----- */
+
+  sendCommand("save\r", "Storing in config",ok);
+  sendCommand("reboot\r", "*READY*", ok); //After reboot we directly go to dataMode
+
+ /*
+
+    -----  Join access point -----
+    HAL_Delay(1000);
+    commandMode();
+    sendCommand("join " SSID "\r", "Associated!",ok);
+
+  sendCommand("exit\r", "EXIT", ok); // go into DATA mode (mode in which we can communicate with the network/http)
+
+ */
+
+
+
+
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 
+	  /*-----  Join access point -----*/
 
-	  reglagecouleur(125,0,0);
-	  HAL_Delay(500);
-
-	  DHT22_DataStruct = DHT22_ReadData();
-	  if(DHT22_DataStruct.is_data_valid)
+	  HAL_Delay(1000);
+	  commandMode();
+	  sendCommand("show  net\r", "Assoc=OK",ok);
+	  if (strstr((char *)ok,"Assoc=OK")==NULL)
 	  {
-		  char text_buff[32];
-		  sprintf(text_buff,"Temp : %.2f C",DHT22_DataStruct.T);
-		  lcd_position(&hi2c1,0,0);
-		  lcd_print(&hi2c1, text_buff);
+		  sendCommand("join\r","Associated!",ok);
+		  HAL_Delay(2000);
+		  sendCommand("set ip protocol 18\r","OK",ok); //enable html client
+		    sendCommand("set com remote 0\r","OK",ok); // turn off the REMOTE string so it does not interfere with the post
 
 
-		  sprintf(text_buff,"Hum : %.2f %%",DHT22_DataStruct.RH);
-		  lcd_position(&hi2c1,0,1);
-		  lcd_print(&hi2c1, text_buff);
+		    sendCommand("set ip host " HOST_IP"\r","OK",ok); //set remote IP to connect to
+		    sendCommand("set ip remote "HOST_PORT"\r","OK",ok); //set remote Port to connect to
+	  sendCommand("set uart mode 2\r","AOK",ok); //auto connect on every UART message
 
 
-		  reglagecouleur(200,200,255);
-		  HAL_Delay(750);
+	  }
+	  sendCommand("exit\r","EXIT", ok);
+
+
+	  for (int ki = 0; ki <100 ; ki ++)
+{
+	  /* Code Capteurs */
+
+
+
+	  char text_buff[32] = "Les Mesures :       ";
+	     //sprintf(text_buff,"Temp : %.2f C",DHT22_DataStruct.T);
+
+	     lcd_position(&hi2c1,0,0);
+	     lcd_print(&hi2c1, text_buff);
+
+
+
+
+	  // DHT22
+
+	    DHT22_DataStruct = DHT22_ReadData();
+	   	  if(DHT22_DataStruct.is_data_valid)
+	   	  {
+	   		  char text_buff[32];
+	   		  sprintf(text_buff,"Temp : %.2f C       ",DHT22_DataStruct.T);
+	   		  lcd_position(&hi2c1,0,1);
+	   		  lcd_print(&hi2c1, text_buff);
+	   		  HAL_Delay(1000);
+
+
+	   		  sprintf(text_buff,"Hum : %.2f %%      ",DHT22_DataStruct.RH);
+	   		  lcd_position(&hi2c1,0,1);
+	   		  lcd_print(&hi2c1, text_buff);
+	   		  HAL_Delay(1000);
+
+
+	   	  }
+
+
+
+
+	    // WATER LEVEL
+
+
+
+	    // Get ADC value
+	   	    HAL_ADC_Start(&hadc);
+	   	    HAL_ADC_PollForConversion(&hadc, HAL_MAX_DELAY);
+	   	    raw_wtr_lvl = HAL_ADC_GetValue(&hadc);
+
+
+
+	   	    // Convert to string and print
+	   	    sprintf(msg_raw_wtr_lvl, "%hu\r\n", raw_wtr_lvl);
+	   	    HAL_UART_Transmit(&huart2, (uint8_t*)msg_raw_wtr_lvl, strlen(msg_raw_wtr_lvl), HAL_MAX_DELAY);
+
+	   	    // get pourcentage value
+	   	    Waterlvl = raw_wtr_lvl * 100 / 4095 ;//4095 adc 12 bits resolution
+
+	   //affichage LCD water level
+
+
+	   	 sprintf(text_buff,"Hum Terre : %d %%     ",Waterlvl);
+	   	 lcd_position(&hi2c1,0,1);
+	   	 lcd_print(&hi2c1, text_buff);
+	   	 HAL_Delay(1000);
+
+
+	   	tcs34725_get_RGB_Values(&red, &green, &blue);//lecture rgb
+
+	      // affichage de la temperature sur l'ecran lcd
+	     	 	 	 //lcd_clear();
+
+	    sprintf(text_buff,"R%.0f G%.0f B%.0f    ",red,green,blue);
+	    lcd_position(&hi2c1,0,1);
+	    lcd_print(&hi2c1, text_buff);
+	    HAL_Delay(1000);
+
+	    if (red < 50)
+	    {
+	    	HAL_GPIO_TogglePin(POMPE_GPIO_Port, POMPE_Pin);
+	    }
+
+
+
+
+
+
+	  }
+
+
+
+	  /* Send measures to server */
+
+	  snprintf(GET_DATA_Send,100,"GET %sid=%d&temp=%d&huma=%d&hums=%d&wtrlvl=%d","/ShowData?",
+			  	  	  	  	  id + i, (int)(DHT22_DataStruct.T * 100), (int)(DHT22_DataStruct.RH * 100), humS, Waterlvl);
+	  HAL_Delay(500);
+	  sendData(GET_DATA_Send,"200 OK", ok);
+	  i++;
+
+	  /* test Failure and reboot Wifi Module*/
+	  if( strstr((char *)ok,"ERR") != NULL ||  strcmp((char *)ok,"") == 0 )
+	  {
+		  reboot ++;
+		  if(reboot >= 2)
+		  {
+			  reboot = 0;
+			  commandMode();
+			  sendCommand("reboot\r", "*READY*", ok);
+		  }
+
 	  }
 
 
 
 
+
+	  HAL_Delay(5000);
 
 
   }
