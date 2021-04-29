@@ -40,15 +40,25 @@
 	WIFLY_AUTH_WPA2_PSK    4    // WPA2-PSK
 	WIFLY_AUTH_ADHOC       6    // Ad-hoc, join any Ad-hoc network
 */
-#define SSID	"Galaxy-S8"
-#define KEY		"123456789"
-#define AUTH	WIFLY_AUTH_WPA2_PSK
+#define _home_settings
+
+#ifdef _smartphone_settings
+	#define SSID	"Galaxy-S8"
+	#define KEY		"123456789"
+	#define AUTH	WIFLY_AUTH_WPA2_PSK
+#endif
+
+#ifdef _home_settings
+	#define SSID	"Bbox-37DD33DC"
+	#define KEY		"dpKRFLNP32ynFkkPr9"
+	#define AUTH	WIFLY_AUTH_WPA2_PSK
+#endif
 
 #define URL		"httpbin.org"//"api.openweathermap.org" //"e40810fd255dcc.localhost.run"
 
-#define HOST_IP "192.168.43.48"
-#define HOST_PORT "4010"
-#define STD_PORT "80"
+#define HOST_IP 	"192.168.1.49" 	//IP of the server we want to access
+#define HOST_PORT 	"4010" 				//The port to access
+#define STD_PORT 	"80"
 
 
 /* ---- LCD ---- */
@@ -172,7 +182,7 @@ int main(void)
 
 
 
-    char text_buff[32] = "Initialisation";
+    char text_buff[32] = "Initialisation           ";
     //sprintf(text_buff,"Temp : %.2f C",DHT22_DataStruct.T);
 
     lcd_position(&hi2c1,0,0);
@@ -183,7 +193,7 @@ int main(void)
 
     /* lCD INIT : DHT22 */
 
-    sprintf(text_buff,"du DHT22");
+    sprintf(text_buff,"du DHT22              ");
 
     lcd_position(&hi2c1,0,1);
     lcd_print(&hi2c1, text_buff);
@@ -191,37 +201,40 @@ int main(void)
 
     /* INIT DHT22 */
      DHT22_Init(&htim7, 32e6,DHT22_SENS_GPIO_Port,DHT22_SENS_Pin, DHT22_SENS_EXTI_IRQn);
+     DHT22_Data DHT22_DataStruct;
 
-    /* TEST : Print measures on the LCD screen */
-    DHT22_Data DHT22_DataStruct;
-    HAL_Delay(500);
+//    /* TEST : Print measures on the LCD screen */
 
-    DHT22_DataStruct = DHT22_ReadData();
+ /*   HAL_Delay(500);
+
+    	DHT22_DataStruct = DHT22_ReadData();
    	  if(DHT22_DataStruct.is_data_valid)
    	  {
    		  char text_buff[32];
-   		  sprintf(text_buff,"Temp : %.2f C",DHT22_DataStruct.T);
-   		  lcd_position(&hi2c1,0,0);
-   		  lcd_print(&hi2c1, text_buff);
-
-
-   		  sprintf(text_buff,"Hum : %.2f %%",DHT22_DataStruct.RH);
+   		  sprintf(text_buff,"Temp : %.2f C         ",DHT22_DataStruct.T);
    		  lcd_position(&hi2c1,0,1);
    		  lcd_print(&hi2c1, text_buff);
+   		  HAL_Delay(1000);
 
 
-   		  reglagecouleur(200,200,255);
-   		  HAL_Delay(1750);
+   		  sprintf(text_buff,"Hum : %.2f %%         ",DHT22_DataStruct.RH);
+   		  lcd_position(&hi2c1,0,1);
+   		  lcd_print(&hi2c1, text_buff);
+   		  HAL_Delay(1000);
+
+
+
    	  }
-
+*/
 
 
    	/* ----- ADC - Water Level  ----- */
 
-   	sprintf(text_buff,"du Niv D'eau");
+   	sprintf(text_buff,"du Niv D'eau           ");
 
    	lcd_position(&hi2c1,0,1);
    	lcd_print(&hi2c1, text_buff);
+   	HAL_Delay(1000);
 
     uint16_t raw_wtr_lvl;
     char msg_raw_wtr_lvl[10];
@@ -231,8 +244,19 @@ int main(void)
 
 
 
+    /* ----- LCD INIT : TCS34 ---- */
+        sprintf(text_buff,"du TCS34          ");
+
+        lcd_position(&hi2c1,0,1);
+        lcd_print(&hi2c1, text_buff);
+        HAL_Delay(1000);
+
+
+        float red,green,blue;
+
+
     /* lCD INIT : WIFI */
-    sprintf(text_buff,"du module wifi");
+    sprintf(text_buff,"du module wifi          ");
 
     lcd_position(&hi2c1,0,1);
     lcd_print(&hi2c1, text_buff);
@@ -240,11 +264,6 @@ int main(void)
 
 
 
-    /* ----- LCD INIT : TCS34 ---- */
-    uint8_t Red[256];
-    uint8_t Blue[256];
-    uint8_t Green[256];
-    float red,green,blue;
 
 
 
@@ -337,17 +356,20 @@ int main(void)
 	  sendCommand("exit\r","EXIT", ok);
 
 
-	  for (int ki = 0; ki <100 ; ki ++)
-{
+
 	  /* Code Capteurs */
 
 
 
-	  char text_buff[32] = "Les Mesures :       ";
-	     //sprintf(text_buff,"Temp : %.2f C",DHT22_DataStruct.T);
+		  	  char text_buff[32] = "Les Mesures :       ";
+		 	  lcd_position(&hi2c1,0,0);
+		  	  lcd_print(&hi2c1, text_buff);
 
-	     lcd_position(&hi2c1,0,0);
-	     lcd_print(&hi2c1, text_buff);
+
+
+		  	  sprintf(text_buff,"                          .");
+		  	  lcd_position(&hi2c1,0,1);
+		  	  lcd_print(&hi2c1, text_buff);
 
 
 
@@ -358,13 +380,13 @@ int main(void)
 	   	  if(DHT22_DataStruct.is_data_valid)
 	   	  {
 	   		  char text_buff[32];
-	   		  sprintf(text_buff,"Temp : %.2f C       ",DHT22_DataStruct.T);
+	   		  sprintf(text_buff,"Temp : %d C       ",(int)(DHT22_DataStruct.T));
 	   		  lcd_position(&hi2c1,0,1);
 	   		  lcd_print(&hi2c1, text_buff);
 	   		  HAL_Delay(1000);
 
 
-	   		  sprintf(text_buff,"Hum : %.2f %%      ",DHT22_DataStruct.RH);
+	   		  sprintf(text_buff,"Hum : %d %%      ",(int)(DHT22_DataStruct.RH));
 	   		  lcd_position(&hi2c1,0,1);
 	   		  lcd_print(&hi2c1, text_buff);
 	   		  HAL_Delay(1000);
@@ -404,25 +426,19 @@ int main(void)
 
 	   	tcs34725_get_RGB_Values(&red, &green, &blue);//lecture rgb
 
-	      // affichage de la temperature sur l'ecran lcd
-	     	 	 	 //lcd_clear();
+	   	//LCD screen take ambient color
+	   	reglagecouleur((int) red,(int) green,(int) blue);
 
-	    sprintf(text_buff,"R%.0f G%.0f B%.0f    ",red,green,blue);
+
+	    // affichage de la temperature sur l'ecran lcd
+	    //lcd_clear();
+
+	   	sprintf(text_buff,"R%.0d G%.0d B%.0d      ",(int) red,(int) green,(int) blue);
 	    lcd_position(&hi2c1,0,1);
 	    lcd_print(&hi2c1, text_buff);
 	    HAL_Delay(1000);
 
-	    if (red < 50)
-	    {
-	    	HAL_GPIO_TogglePin(POMPE_GPIO_Port, POMPE_Pin);
-	    }
 
-
-
-
-
-
-	  }
 
 
 
@@ -430,7 +446,7 @@ int main(void)
 
 	  snprintf(GET_DATA_Send,100,"GET %sid=%d&temp=%d&huma=%d&hums=%d&wtrlvl=%d","/ShowData?",
 			  	  	  	  	  id + i, (int)(DHT22_DataStruct.T * 100), (int)(DHT22_DataStruct.RH * 100), humS, Waterlvl);
-	  HAL_Delay(500);
+
 	  sendData(GET_DATA_Send,"200 OK", ok);
 	  i++;
 
@@ -451,7 +467,7 @@ int main(void)
 
 
 
-	  HAL_Delay(5000);
+	  //HAL_Delay(5000);
 
 
   }

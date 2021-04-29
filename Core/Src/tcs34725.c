@@ -2,7 +2,7 @@
  * tcs34725.c
  *
  *  Created on: 16 févr. 2020
- *      Author: belkacem
+ *
  */
 /*includes*/
 #include "tcs34725.h"

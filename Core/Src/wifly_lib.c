@@ -2,7 +2,7 @@
  * \file   	: wifly_lib.c														 *
  * \date  	: Mar 20, 2021														 *
  * \brief 	: Wifi shield seedstudio v2 library									 *
- *																				 *
+ *\Adapted by prince from arduino library to stm32 compatible					 *
  *********************************************************************************
  *	 	 	 	 	 	 Released under MIT License								 *
  * 	 	 	 	 	 			Copyright 2021 									 *
